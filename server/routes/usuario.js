@@ -1,11 +1,14 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const { verificaToken } = require('../middlewares/authentication');
+const { verificaAdmin } = require('../middlewares/admin');
 const _ = require('underscore');
 const Usuario = require('../models/usuario');
+const { json } = require('body-parser');
 
 const app = express();
 
-app.post('/usuario', function(req, res) {
+app.post('/usuario', verificaToken, function(req, res) {
     let body = req.body;
 
     let usuario = new Usuario({
@@ -33,7 +36,7 @@ app.post('/usuario', function(req, res) {
 });
 
 
-app.put('/usuario/:id', function(req, res) {
+app.put('/usuario/:id', verificaToken, function(req, res) {
     let id = req.params.id;
     let body = _.pick(req.body, ['nombre', 'email', 'img', 'role', 'estado']);
 
@@ -53,18 +56,18 @@ app.put('/usuario/:id', function(req, res) {
 });
 
 
-app.get('/usuarios', function(req, res) {
+app.get('/usuarios', [verificaToken, verificaAdmin], function(req, res) {
 
     let desde = req.query.desde || 0;
     desde = Number(desde);
     let hasta = req.query.hasta || 0;
     hasta = Number(hasta);
-    let estado = req.query.estado || null;
+    let estado = req.body.estado || null;
     estado = estado != null ? String(estado) : null;
 
     Usuario.find({ estado }, 'nombre email estado')
-        .skip(desde)
-        .limit(hasta)
+        //.skip(desde)
+        //.limit(hasta)
         .exec((err, usuarios) => {
             if (err) {
                 return res.status(400).json({
@@ -85,7 +88,7 @@ app.get('/usuarios', function(req, res) {
         });
 });
 
-app.delete('/usuario/:id', function(req, res) {
+app.delete('/usuario/:id', verificaToken, function(req, res) {
     let id = req.params.id;
     //Usuario.findByIdAndRemove(id, (err, usuarioBorrado) => {
 
